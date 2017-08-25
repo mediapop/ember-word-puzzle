@@ -1,0 +1,16 @@
+Points: {{points}}<br>
+
+{{word-finder
+  clearedWord='clearedWord'
+  words=words
+  gameHeight=9
+  gameWidth=11}}
+
+{{#each gameStatus as |word|}}
+  <br>
+  {{#if word.active}}
+    <b>{{word.word}}</b>
+  {{else}}
+    {{word.word}}
+  {{/if}}
+{{/each}}

@@ -1,0 +1,1 @@
+export { default } from 'ember-word-finder/components/word-finder';
