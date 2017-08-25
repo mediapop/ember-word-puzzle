@@ -114,7 +114,13 @@ export default Ember.Component.extend({
     const letters = this.get('letters');
     const type = gamePiece.get('type');
     const size = this.get('gamePieceSize');
-    const stateOffset = gamePiece.get('active') ? size : 0;
+    
+    let stateOffset = 0;
+    if(gamePiece.get('active')){
+      stateOffset = size;
+    }else if(gamePiece.get('disabled')){
+      stateOffset = size * 2;
+    }
 
     ctx.save();
     ctx.globalAlpha = gamePiece.get('opacity');
@@ -219,7 +225,6 @@ export default Ember.Component.extend({
     if (this.get('isSelectionAWord')) {
       this.sendAction('clearedWord', this.get('selectionWord'));
       this.get('selection').forEach(selection => {
-        selection.set('opacity', 0);
         selection.set('disabled', true);
         selection.set('active', false);
       });
