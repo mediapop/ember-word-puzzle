@@ -177,8 +177,11 @@ export default Ember.Component.extend({
   },
 
   click(e) {
-    const column = Math.floor(e.offsetX / this.get('gamePieceSize'));
-    const row = Math.floor(e.offsetY / this.get('gamePieceSize'));
+    const coordinateRatio = this.element.width / this.element.clientWidth;
+    const column = Math.floor(e.offsetX * coordinateRatio / this.get('gamePieceSize'));
+    const row = Math.floor(e.offsetY * coordinateRatio/ this.get('gamePieceSize'));
+
+
     const first = this.get('first');
     const target = this.get(`gameBoard.${row}.${column}`);
 
