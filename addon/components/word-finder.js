@@ -114,11 +114,11 @@ export default Ember.Component.extend({
     const letters = this.get('letters');
     const type = gamePiece.get('type');
     const size = this.get('gamePieceSize');
-    
+
     let stateOffset = 0;
-    if(gamePiece.get('active')){
+    if (gamePiece.get('active')) {
       stateOffset = size;
-    }else if(gamePiece.get('disabled')){
+    } else if (gamePiece.get('disabled')) {
       stateOffset = size * 2;
     }
 
@@ -185,12 +185,16 @@ export default Ember.Component.extend({
   click(e) {
     const coordinateRatio = this.element.width / this.element.clientWidth;
     const column = Math.floor(e.offsetX * coordinateRatio / this.get('gamePieceSize'));
-    const row = Math.floor(e.offsetY * coordinateRatio/ this.get('gamePieceSize'));
+    const row = Math.floor(e.offsetY * coordinateRatio / this.get('gamePieceSize'));
 
 
     const first = this.get('first');
     const target = this.get(`gameBoard.${row}.${column}`);
 
+    if (target.get('disabled')) {
+      return;
+    }
+    
     if (!first) {
       this.set('first', target);
       this.set(`gameBoard.${row}.${column}.active`, true);
@@ -204,10 +208,6 @@ export default Ember.Component.extend({
     if (first === target) {
       this.set('first', undefined);
       this.set(`gameBoard.${row}.${column}.active`, false);
-      return;
-    }
-
-    if (target.get('disabled')) {
       return;
     }
 
