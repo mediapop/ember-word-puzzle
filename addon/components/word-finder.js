@@ -55,23 +55,55 @@ export default Ember.Component.extend({
     while (placements.length) {
       const placeWord = placements[0];
       const wordLength = placeWord.length;
+      let directionX;
+      let directionY;
 
-      const startX = Math.floor(Math.random() * 1000) % (this.get('gameWidth') - wordLength);
-      const startY = Math.floor(Math.random() * 1000) % this.get('gameHeight');
+      switch (Math.floor(Math.random() * 1000) % 3) {
+        case 0:
+          directionX = 1;
+          directionY = 0;
+          break;
+        case 1:
+          directionX = 0;
+          directionY = 1;
+          break;
+        case 2:
+          directionX = 1;
+          directionY = 1;
+          break;
+      }
+
+      const placementRangeX = this.get('gameWidth') - (directionX ? wordLength : 1) + 1;
+      const placementRangeY = this.get('gameHeight') - (directionY ? wordLength : 1) + 1;
+
+      const startX = Math.floor(Math.random() * 1000) % placementRangeX;
+      const startY = Math.floor(Math.random() * 1000) % placementRangeY;
+      const coordinates = [];
 
       let restart = false;
-      for (let column = startX; column < (startX + wordLength); column++) {
-        if (this.get(`gameBoard.${startY}.${column}`)) {
+      for (let character = 0; character < wordLength; character++) {
+        const row = startY + character * directionY;
+        const column = startX + character * directionX;
+
+        if (this.get(`gameBoard.${row}.${column}`)) {
           restart = true;
           break;
         }
+
+        coordinates.push({row, column, character});
       }
+
       if (restart) {
         continue
       }
-      for (let column = startX; column < (startX + wordLength); column++) {
-        this.addGamePiece(startY, column, placeWord[column - startX].toLowerCase());
-      }
+
+      coordinates.forEach(
+        coordinate => this.addGamePiece(
+          coordinate.row,
+          coordinate.column,
+          placeWord[coordinate.character].toLowerCase()
+        )
+      );
 
       placements.shift();
     }
@@ -194,16 +226,21 @@ export default Ember.Component.extend({
     if (target.get('disabled')) {
       return;
     }
-    
+
     if (!first) {
       this.set('first', target);
       this.set(`gameBoard.${row}.${column}.active`, true);
       return;
     }
 
-    if (first.get('row') !== row && first.get('column') !== column) {
+    const distanceX = Math.abs(first.get('column') - target.get('column'));
+    const distanceY = Math.abs(first.get('row') - target.get('row'));
+    const isDiagonal = distanceX === distanceY;
+
+    if (first.get('row') !== row && first.get('column') !== column && !isDiagonal) {
       return;
     }
+
 
     if (first === target) {
       this.set('first', undefined);
@@ -216,10 +253,12 @@ export default Ember.Component.extend({
     let startingColumn = first.get('column') < column ? first.get('column') : column;
     let endingColumn = first.get('column') >= column ? first.get('column') : column;
 
-    for (let r = startingRow; r <= endingRow; ++r) {
-      for (let c = startingColumn; c <= endingColumn; ++c) {
-        this.set(`gameBoard.${r}.${c}.active`, true);
-      }
+    const distance = distanceX > distanceY ? distanceX : distanceY;
+
+    for (let i = 0; i <= distance; i++) {
+      const row = startingRow + (startingRow !== endingRow ? i : 0);
+      const column = startingColumn + (startingColumn !== endingColumn ? i : 0);
+      this.set(`gameBoard.${row}.${column}.active`, true);
     }
 
     if (this.get('isSelectionAWord')) {
