@@ -37,6 +37,7 @@ export default Ember.Component.extend({
   initializeAGameBoard() {
     const gameWidth = this.get('gameWidth');
     const gameHeight = this.get('gameHeight');
+    this.set('remaining', this.get('words.length'));
 
     const board = [];
 
@@ -262,7 +263,7 @@ export default Ember.Component.extend({
     }
 
     if (this.get('isSelectionAWord')) {
-      this.sendAction('clearedWord', this.get('selectionWord'));
+      this.clearWord();
       this.get('selection').forEach(selection => {
         selection.set('disabled', true);
         selection.set('active', false);
@@ -275,6 +276,13 @@ export default Ember.Component.extend({
     this.set('first', undefined);
   },
 
+  clearWord() {
+    this.sendAction('clearedWord', this.get('selectionWord'));
+    const remaining = this.decrementProperty('remaining');
+    if (remaining === 0) {
+      this.sendAction('gameOver');
+    }
+  },
 
   isSelectionAWord: Ember.computed("selectionWord", function () {
     return this.get('words').map(word => word.toLowerCase()).includes(this.get("selectionWord"));

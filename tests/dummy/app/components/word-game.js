@@ -14,6 +14,9 @@ export default Ember.Component.extend({
     clearedWord: function (word) {
       this.get('clearedWords').addObject(word.toUpperCase());
       this.set('points', this.get('points') + 10);
+    },
+    gameOver: function () {
+      alert("gameOver");
     }
   }
 })
