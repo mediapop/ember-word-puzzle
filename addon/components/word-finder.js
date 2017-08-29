@@ -39,6 +39,8 @@ export default Ember.Component.extend({
     const gameHeight = this.get('gameHeight');
     this.set('remaining', this.get('words.length'));
 
+    
+
     const board = [];
 
     for (let row = 0; row < gameHeight; row++) {
