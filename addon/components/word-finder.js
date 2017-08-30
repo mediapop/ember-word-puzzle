@@ -283,6 +283,20 @@ export default Ember.Component.extend({
     });
   },
 
+  setActive(fromX, fromY, toX, toY) {
+    const distanceX = Math.abs(fromX - toX);
+    const distanceY = Math.abs(fromY - toY);
+    const distance = distanceX > distanceY ? distanceX : distanceY;
+    
+    if (distanceX === distanceY || distanceX === 0 || distanceY === 0) {
+
+    } else {
+      this.get('gameBoard')
+        .filter(gamePiece => gamePiece.get('row') !== fromY && gamePiece.get('column') !== fromX)
+        .forEach(gamePiece => gamePiece.set('active', false))
+    }
+  },
+
   click(e) {
     if (this.get('mouseSelection')) {
       return this.doSelectionMatching();
