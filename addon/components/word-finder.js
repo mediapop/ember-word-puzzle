@@ -39,8 +39,6 @@ export default Ember.Component.extend({
     const gameHeight = this.get('gameHeight');
     this.set('remaining', this.get('words.length'));
 
-    
-
     const board = [];
 
     for (let row = 0; row < gameHeight; row++) {
@@ -217,11 +215,79 @@ export default Ember.Component.extend({
     this.loadResource("/letters.png", "letters");
   },
 
-  click(e) {
-    const coordinateRatio = this.element.width / this.element.clientWidth;
-    const column = Math.floor(e.offsetX * coordinateRatio / this.get('gamePieceSize'));
-    const row = Math.floor(e.offsetY * coordinateRatio / this.get('gamePieceSize'));
+  mouseDown(e) {
+    this.set('mousePressed', {
+      clientX: e.clientX,
+      clientY: e.clientY
+    });
+  },
 
+  mouseMove(e) {
+    e.preventDefault();
+    const mousePressed = this.get('mousePressed');
+    if (mousePressed && !this.get('mouseSelection')) {
+      const distance = Math.abs(e.clientX - mousePressed.clientX) + Math.abs(e.clientY - mousePressed.clientY);
+      this.set('mouseSelection', distance > 10);
+    }
+    if (this.get('mouseSelection')) {
+      const {row, column} = this.toGameGrid(e.offsetX, e.offsetY);
+      this.set(`gameBoard.${row}.${column}.active`, true);
+    }
+  },
+
+  mouseUp() {
+    this.set('mousePressed', false);
+  },
+
+  touchEnd() {
+    if (this.get('touchSelection')) {
+      this.doSelectionMatching();
+      this.set('touchSelection', false);
+    }
+  },
+
+  touchMove(e) {
+    e.preventDefault();
+    const {x, y} = this.touchCoordinates(e);
+    const {row, column} = this.toGameGrid(x, y);
+    this.set("touchSelection", true);
+
+    this.set(`gameBoard.${row}.${column}.active`, true);
+  },
+
+  toGameGrid(x, y) {
+    const coordinateRatio = this.element.width / this.element.clientWidth;
+    const column = Math.floor(x * coordinateRatio / this.get('gamePieceSize'));
+    const row = Math.floor(y * coordinateRatio / this.get('gamePieceSize'));
+    return {
+      row, column
+    };
+  },
+
+  touchCoordinates(e) {
+    const rect = this.element.getBoundingClientRect();
+    const x = e.pageX - rect.left;
+    const y = e.pageY - rect.top;
+    return {
+      x, y
+    };
+  },
+
+  touchStart(e) {
+    const {x, y} = this.touchCoordinates(e);
+    const {row, column} = this.toGameGrid(x, y);
+
+    this.set("selectionStart", {
+      row,
+      column
+    });
+  },
+
+  click(e) {
+    if (this.get('mouseSelection')) {
+      return this.doSelectionMatching();
+    }
+    const {row, column} = this.toGameGrid(e.offsetX, e.offsetY);
 
     const first = this.get('first');
     const target = this.get(`gameBoard.${row}.${column}`);
@@ -264,6 +330,10 @@ export default Ember.Component.extend({
       this.set(`gameBoard.${row}.${column}.active`, true);
     }
 
+    this.doSelectionMatching();
+  },
+
+  doSelectionMatching() {
     if (this.get('isSelectionAWord')) {
       this.clearWord();
       this.get('selection').forEach(selection => {
@@ -276,6 +346,9 @@ export default Ember.Component.extend({
       });
     }
     this.set('first', undefined);
+    this.set('selectionStart', undefined);
+    this.set('touchSelection', undefined);
+    this.set('mouseSelection', undefined);
   },
 
   clearWord() {
