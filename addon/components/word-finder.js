@@ -217,8 +217,8 @@ export default Ember.Component.extend({
 
   mouseDown(e) {
     this.set('mousePressed', {
-      clientX: e.clientX,
-      clientY: e.clientY
+      offsetX: e.offsetX,
+      offsetY: e.offsetY
     });
   },
 
@@ -226,51 +226,18 @@ export default Ember.Component.extend({
     e.preventDefault();
     const mousePressed = this.get('mousePressed');
     if (mousePressed && !this.get('mouseSelection')) {
-      const distance = Math.abs(e.clientX - mousePressed.clientX) + Math.abs(e.clientY - mousePressed.clientY);
+      const distance = Math.abs(e.offsetX - mousePressed.offsetX) + Math.abs(e.offsetY - mousePressed.offsetY);
       this.set('mouseSelection', distance > 10);
     }
     if (this.get('mouseSelection')) {
-      const {row, column} = this.toGameGrid(e.offsetX, e.offsetY);
-      this.set(`gameBoard.${row}.${column}.active`, true);
+      const origin = this.toGameGrid(mousePressed.offsetX, mousePressed.offsetY);
+      const target = this.toGameGrid(e.offsetX, e.offsetY);
+      this.setActive(origin.row, origin.column, target.row, target.column);
     }
   },
 
   mouseUp() {
     this.set('mousePressed', false);
-  },
-
-  touchEnd() {
-    if (this.get('touchSelection')) {
-      this.doSelectionMatching();
-      this.set('touchSelection', false);
-    }
-  },
-
-  touchMove(e) {
-    e.preventDefault();
-    const {x, y} = this.touchCoordinates(e);
-    const {row, column} = this.toGameGrid(x, y);
-    this.set("touchSelection", true);
-
-    this.set(`gameBoard.${row}.${column}.active`, true);
-  },
-
-  toGameGrid(x, y) {
-    const coordinateRatio = this.element.width / this.element.clientWidth;
-    const column = Math.floor(x * coordinateRatio / this.get('gamePieceSize'));
-    const row = Math.floor(y * coordinateRatio / this.get('gamePieceSize'));
-    return {
-      row, column
-    };
-  },
-
-  touchCoordinates(e) {
-    const rect = this.element.getBoundingClientRect();
-    const x = e.pageX - rect.left;
-    const y = e.pageY - rect.top;
-    return {
-      x, y
-    };
   },
 
   touchStart(e) {
@@ -283,17 +250,61 @@ export default Ember.Component.extend({
     });
   },
 
+  touchMove(e) {
+    e.preventDefault();
+    const origin = this.get('selectionStart');
+    const {x, y} = this.touchCoordinates(e);
+    const target = this.toGameGrid(x, y);
+    this.setActive(origin.row, origin.column, target.row, target.column);
+    this.set("touchSelection", true);
+  },
+
+  touchEnd() {
+    if (this.get('touchSelection')) {
+      this.doSelectionMatching();
+      this.set('touchSelection', false);
+    }
+  },
+
+  touchCoordinates(e) {
+    const rect = this.element.getBoundingClientRect();
+    const x = e.pageX - rect.left;
+    const y = e.pageY - rect.top;
+    return {
+      x, y
+    };
+  },
+
+  toGameGrid(x, y) {
+    const coordinateRatio = this.element.width / this.element.clientWidth;
+    const column = Math.floor(x * coordinateRatio / this.get('gamePieceSize'));
+    const row = Math.floor(y * coordinateRatio / this.get('gamePieceSize'));
+    return {
+      row, column
+    };
+  },
+
   setActive(fromX, fromY, toX, toY) {
+    // If the selection isn't forwards diagonal, horizontal or vertical the selection will stay on the first.
+    if (fromX > toX || fromY > toY) {
+      toX = fromX;
+      toY = fromY;
+    }
+
     const distanceX = Math.abs(fromX - toX);
     const distanceY = Math.abs(fromY - toY);
-    const distance = distanceX > distanceY ? distanceX : distanceY;
-    
-    if (distanceX === distanceY || distanceX === 0 || distanceY === 0) {
+    const distance = (distanceX > distanceY ? distanceX : distanceY) + 1;
 
-    } else {
-      this.get('gameBoard')
-        .filter(gamePiece => gamePiece.get('row') !== fromY && gamePiece.get('column') !== fromX)
-        .forEach(gamePiece => gamePiece.set('active', false))
+    this.get('selection').forEach(gamePiece => gamePiece.set('active', false));
+
+    if (distanceX === distanceY || distanceX === 0 || distanceY === 0) {
+      const directionX = distanceX > 0 ? 1 : 0;
+      const directionY = distanceY > 0 ? 1 : 0;
+      for (let i = 0; i < distance; ++i) {
+        const row = fromX + i * directionX;
+        const column = fromY + i * directionY;
+        this.set(`gameBoard.${row}.${column}.active`, true);
+      }
     }
   },
 
@@ -312,38 +323,10 @@ export default Ember.Component.extend({
 
     if (!first) {
       this.set('first', target);
-      this.set(`gameBoard.${row}.${column}.active`, true);
-      return;
+      return this.setActive(row, column, row, column);
     }
 
-    const distanceX = Math.abs(first.get('column') - target.get('column'));
-    const distanceY = Math.abs(first.get('row') - target.get('row'));
-    const isDiagonal = distanceX === distanceY;
-
-    if (first.get('row') !== row && first.get('column') !== column && !isDiagonal) {
-      return;
-    }
-
-
-    if (first === target) {
-      this.set('first', undefined);
-      this.set(`gameBoard.${row}.${column}.active`, false);
-      return;
-    }
-
-    let startingRow = first.get('row') < row ? first.get('row') : row;
-    let endingRow = first.get('row') >= row ? first.get('row') : row;
-    let startingColumn = first.get('column') < column ? first.get('column') : column;
-    let endingColumn = first.get('column') >= column ? first.get('column') : column;
-
-    const distance = distanceX > distanceY ? distanceX : distanceY;
-
-    for (let i = 0; i <= distance; i++) {
-      const row = startingRow + (startingRow !== endingRow ? i : 0);
-      const column = startingColumn + (startingColumn !== endingColumn ? i : 0);
-      this.set(`gameBoard.${row}.${column}.active`, true);
-    }
-
+    this.setActive(first.get('row'), first.get('column'), row, column);
     this.doSelectionMatching();
   },
 
