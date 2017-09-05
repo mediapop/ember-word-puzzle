@@ -34,10 +34,10 @@ export default Ember.Component.extend({
   _start: 0,
   attributeBindings: ['width', 'height'],
   gameBoard: [],
-  initializeAGameBoard() {
+  remaining: Ember.computed.reads('words.length'),
+  gameBoardFactory: function () {
     const gameWidth = this.get('gameWidth');
     const gameHeight = this.get('gameHeight');
-    this.set('remaining', this.get('words.length'));
 
     const board = [];
 
@@ -49,11 +49,29 @@ export default Ember.Component.extend({
       board.push(rowPieces)
     }
 
+    return board;
+  },
+  initializeAGameBoard() {
+    const gameWidth = this.get('gameWidth');
+    const gameHeight = this.get('gameHeight');
+
+    this.set('gameBoard', this.gameBoardFactory());
+
     let placements = Array.from(this.get('words'));
 
-    this.set('gameBoard', board);
+    const MAX_RETRY_LIMIT = 100;
+
+    let retryPlacementLimit = MAX_RETRY_LIMIT;
 
     while (placements.length) {
+      retryPlacementLimit--;
+
+      if (retryPlacementLimit <= 0) {
+        retryPlacementLimit = MAX_RETRY_LIMIT;
+        placements = Array.from(this.get('words'));
+        this.set('gameBoard', this.gameBoardFactory());
+      }
+
       const placeWord = placements[0];
       const wordLength = placeWord.length;
       let directionX;
@@ -111,7 +129,7 @@ export default Ember.Component.extend({
 
     for (let row = 0; row < gameHeight; row++) {
       for (let column = 0; column < gameWidth; column++) {
-        if (!this.get('gameBoard')[row][column]) {
+        if (!this.get(`gameBoard.${row}.${column}`)) {
           this.addGamePiece(row, column);
         }
       }
