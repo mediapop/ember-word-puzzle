@@ -95,6 +95,11 @@ export default Ember.Component.extend({
       const placementRangeX = this.get('gameWidth') - (directionX ? wordLength : 1) + 1;
       const placementRangeY = this.get('gameHeight') - (directionY ? wordLength : 1) + 1;
 
+      // If the word doesn't fit in this direction restart.
+      if (placementRangeX <= 0 || placementRangeY <= 0) {
+        continue;
+      }
+
       const startX = Math.floor(Math.random() * 1000) % placementRangeX;
       const startY = Math.floor(Math.random() * 1000) % placementRangeY;
       const coordinates = [];
