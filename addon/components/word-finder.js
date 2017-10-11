@@ -291,8 +291,17 @@ export default Ember.Component.extend({
 
   touchCoordinates(e) {
     const rect = this.element.getBoundingClientRect();
-    const x = e.pageX - rect.left;
-    const y = e.pageY - rect.top;
+    // On Android and in chrome mobile responsive view e.pageX and e.pageY are undefined.
+    let x = e.pageX;
+    let y = e.pageY;
+    if (x === undefined) {
+      x = e.targetTouches[0].pageX;
+    }
+    if (y === undefined) {
+      y = e.targetTouches[0].pageY;
+    }
+    x -= rect.left;
+    y -= rect.top;
     return {
       x, y
     };
